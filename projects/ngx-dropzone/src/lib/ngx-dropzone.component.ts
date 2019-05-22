@@ -1,13 +1,14 @@
 import {
   Component,
   Input, Output, ElementRef, ViewChild,
-  AfterViewInit, EventEmitter, TemplateRef,
-  ViewEncapsulation,
+  EventEmitter, TemplateRef,
   HostListener,
-  HostBinding
+  HostBinding,
+  ContentChild,
+  OnInit
 } from '@angular/core';
-import { NgxDropzoneService, FilePreview } from './ngx-dropzone.service';
-import { resolve } from 'url';
+import { NgxDropzoneService, FileSelectResult, ParsedFile, RejectedFile } from './ngx-dropzone.service';
+import { reject } from 'q';
 
 @Component({
   selector: 'ngx-dropzone',
@@ -15,42 +16,48 @@ import { resolve } from 'url';
   styleUrls: ['./ngx-dropzone.component.scss'],
   providers: [NgxDropzoneService] // Create a new service instance for each component.
 })
-export class NgxDropzoneComponent {
-
+export class NgxDropzoneComponent implements OnInit {
   constructor(
-    private host: ElementRef,
     public service: NgxDropzoneService
   ) { }
 
-  @Input() label = 'Drop your files here (or click)';
+  @ContentChild('droparea') dropareaTemplate: TemplateRef<ElementRef>;
+  @ContentChild('preview') previewTemplate: TemplateRef<ElementRef>;
+
   @Input() multiple = true;
   @Input() accept = '*';
   @Input() maxFileSize: number;
   @Input() showPreviews = false;
   @Input() preserveFiles = true;
 
-  @Output() filesAdded = new EventEmitter<File[]>();
+  files: ParsedFile[] = [];
+  @Input('files') filesInput: File[] = [];
+
+  @Output() filesAdded: EventEmitter<File[]> = new EventEmitter<File[]>();
+  @Output() filesRemoved: EventEmitter<File[]> = new EventEmitter<File[]>();
+  @Output() filesRejected: EventEmitter<RejectedFile[]> = new EventEmitter<RejectedFile[]>();
+  @Output('filesChange') filesChanged: EventEmitter<File[]> = new EventEmitter<File[]>();
 
   @HostBinding('class.disabled') @Input() disabled = false;
-  @HostBinding('class.hovered') hovered = false;
+  @HostBinding('class.hovered') hovering = false;
 
   @ViewChild('fileInput') private fileInput: ElementRef;
 
   showFileSelector() {
-    if (!this.disabled) {
+    if (!this.disabled)
       this.fileInput.nativeElement.click();
-    }
   }
 
-  reset() {
-    this.service.reset();
+  ngOnInit(): void {
+    this.handleFilesSelection(this.filesInput);
   }
 
   onFilesSelected(event) {
     const files: FileList = event.target.files;
-    this.handleFileDrop(files).then(() => {
+
+    this.handleFileListSelection(files).then(() => {
       // Reset the file input value to trigger the event on new selection.
-      (this.fileInput.nativeElement as HTMLInputElement).value = null;
+      (this.fileInput.nativeElement as HTMLInputElement).value = '';
     });
   }
 
@@ -61,39 +68,60 @@ export class NgxDropzoneComponent {
    */
   @HostListener('dragover', ['$event'])
   onDragOver(event) {
-    if (this.disabled) {
-      return;
-    }
+    if (this.disabled) return;
 
     this.preventDefault(event);
-    this.hovered = true;
+    this.hovering = true;
   }
 
   @HostListener('dragleave', ['$event'])
   onDragLeave(event) {
-    this.hovered = false;
+    if (!event.currentTarget.contains(event.relatedTarget))
+      this.hovering = false;
   }
 
   @HostListener('drop', ['$event'])
   onDrop(event) {
     this.preventDefault(event);
-    this.hovered = false;
-    this.handleFileDrop(event.dataTransfer.files);
+    this.hovering = false;
+    this.handleFileListSelection(event.dataTransfer.files);
   }
 
-  private async handleFileDrop(files: FileList): Promise<void> {
-    return new Promise<void>(resolve => {
-      if (this.disabled) {
-        return;
-      }
+  removeFile(file: ParsedFile) {
+    var precount = this.files.length;
+    this.files = this.files.filter(x => x != file);
+    if (precount == this.files.length) return;
+    this.filesChanged.emit(this.files);
+    this.filesRemoved.emit([file]);
+  }
 
-      this.service.parseFileList(files, this.accept, this.maxFileSize,
-        this.multiple, this.preserveFiles, this.showPreviews)
-        .then(parsedFiles => {
-          this.filesAdded.next(parsedFiles);
+  private handleFilesSelection(files: File[]): Promise<void> {
+    return new Promise<void>(resolve => {
+      if (this.disabled) return reject("Dropzone is disabled");
+
+      if (!this.multiple && files.length > 1)
+        return reject("Cannot accept multiple files");
+
+      this.service.parseFiles(files, this.accept, this.maxFileSize,
+        this.preserveFiles, this.showPreviews)
+        .then((result: FileSelectResult) => {
+          if (result.addedFiles.length) {
+            if (!this.multiple || !this.preserveFiles) this.files = result.addedFiles;
+            else this.files = this.files.concat(result.addedFiles);
+            this.filesChanged.emit(this.files);
+            this.filesAdded.emit(result.addedFiles);
+          }
+
+          if (result.rejectedFiles.length)
+            this.filesRejected.emit(result.rejectedFiles);
+
           resolve();
         });
     });
+  }
+
+  private handleFileListSelection(files: FileList): Promise<void> {
+    return this.handleFilesSelection(Array.from(files));
   }
 
   private preventDefault(event: DragEvent) {

@@ -1,12 +1,42 @@
-<input type="file" #fileInput class="file-input" (change)="onFilesSelected($event)" [multiple]="multiple"
-  [accept]="accept" />
-<div class="dropzone" (click)="showFileSelector()">
-  <p *ngIf="service.previews.length === 0">{{ label }}</p>
-  <div class="preview" [class.limit-width]="!p.data" *ngFor="let p of service.previews">
-    <img *ngIf="p.data" [src]="p.data">
-    <span *ngIf="p.data">{{ p.filename }}</span>
-    <div *ngIf="!p.data" class="preview-item">
-      <span>{{ p.filename }}</span>
-    </div>
+<input type="file"
+       #fileInput class="file-input"
+       (change)="onFilesSelected($event)"
+       [multiple]="multiple"
+       [accept]="accept" />
+
+<div class="dropzone"
+     #dropzone>
+  <div class="droparea" (click)="showFileSelector()">
+    <ng-container *ngTemplateOutlet="dropareaTemplate ? dropareaTemplate : dropareaFallbackTemplate">
+    </ng-container>
+  </div>
+  <div *ngIf="showPreviews" class="previews">
+    <ng-container *ngFor="let file of files">
+      <ng-container *ngTemplateOutlet="
+                    previewTemplate ? previewTemplate : previewFallbackTemplate;
+                    context: {
+                      $implicit: {
+                        file: file,
+                        remove: removeFile.bind(this)
+                      }
+                    }">
+      </ng-container>
+    </ng-container>
   </div>
 </div>
+
+<ng-template #dropareaFallbackTemplate>
+  Click or drop your files here
+</ng-template>
+
+<ng-template #previewFallbackTemplate let-context>
+  <div class="preview-fallback" [class.no-image]="!context.file.preview">
+    <div class="overlay">
+      <div class="content">
+        <div class="filename">{{context.file.name}}</div>
+        <button (click)="context.remove(context.file)">Remove</button>
+      </div>
+    </div>
+    <img *ngIf="context.file.preview" [src]="context.file.preview" />
+  </div>
+</ng-template>

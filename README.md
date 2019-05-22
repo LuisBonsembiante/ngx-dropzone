@@ -99,15 +99,33 @@ export class AppModule { }
 
 <img src="_images/default_disabled.png">
 
-### File selection event
+### Input/Output Events
 
-Use the `(filesAdded)` output event to catch a file selection or drop.\
-It returns a `File[]` of the dropped files that match the filters like file type and maximum size.\
-Use the following example code to read the file's content.
+There are three primary event listeners available. Each returns a `File[]`.
+* Newly added files get output by the `(filesAdded)` event.
+* Newly removed files get output by the `(filesRemoved)` event.
+* Newly rejected files get output by the `(filesRejected)` event.
+
+A fourth primary event listener allows you to handle any file change event.\
+It will include a list of all files the dropzone has after any of the above events occur.\
+Even though the list will reflect the above events, this output event fires before any of the others.\
+This gets outputted by the `(filesChange)` event.
+
+Example of available output events:
+```html
+<ngx-dropzone (filesAdded)="onFilesAdded($event)" 
+              (filesRejected)="onFilesRejected($event)"
+              (filesChange)="onFilesChanged($event)"
+              (filesRemoved)="onFilesRemoved($event)">
+</ngx-dropzone>
+```
+
+You may also pass in a `File[]` to the dropzone component using the input `files`.\
+In combination with the above `(filesChange)` event, you can accomplish two way binding as seen below:
 
 ```html
-<!-- in app.component.html -->
-<ngx-dropzone (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
+<ngx-dropzone [(files)]="files">
+</ngx-dropzone>
 ```
 
 ```js
@@ -133,6 +151,10 @@ onFilesAdded(files: File[]) {
     // reader.readAsDataURL(file);
   });
 }
+
+onFilesRejected(files: File[]) {
+  console.log(files);
+}
 ```
 
 ## Custom style component
@@ -143,8 +165,7 @@ See the following example on how to do it and provide custom styles.
 
 ```html
 <!-- in app.component.html -->
-<ngx-dropzone label="This is my custom dropzone"
-              class="custom-dropzone"
+<ngx-dropzone class="custom-dropzone"
               (filesAdded)="onFilesAdded($event)">
 </ngx-dropzone>
 ```
@@ -189,7 +210,23 @@ You can still use the same properties like for the default styling.
 
 <img src="_images/custom_disabled.png">
 
+Additionally, you may overhaul the interior of the droparea and provide templates for the previews if desired.\
+See example below:
 
-## Licence
+```html
+<ngx-dropzone class="custom-dropzone" (filesAdded)="onFilesAdded($event)" [showPreviews]="true">
+  <ng-template #droparea>
+    <div class="ngx-dropzone-droparea" style="width: 100%; height: 100%;">Drop it!</div>
+  </ng-template>
+  <ng-template #preview>
+    This is a test
+  </ng-template>
+</ngx-dropzone>
+```
+
+This allows you, for example, to include images, or anything really, within the droparea.\
+You could also, potentially, replace the preview template to maybe show an 'x' button instead of our default 'remove' button.
+
+## License
 
 MIT © Peter Freeman

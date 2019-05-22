@@ -7,22 +7,33 @@ With event listener
 Multiple disabled
 <ngx-dropzone [multiple]="false" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
 Label
-<ngx-dropzone [label]="'This is a custom label text'"></ngx-dropzone>
+<ngx-dropzone>
+  <div class="ngx-dropzone-droparea">This is a custom label text</div>
+</ngx-dropzone>
 Accepts "image/*"
-<ngx-dropzone [accept]="'image/*'" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
+<ngx-dropzone [accept]="'image/*'" (filesAdded)="onFilesAdded($event)" (filesChanged)="onFilesChanged($event)" (filesRemoved)="onFilesRemoved($event)" (filesRejected)="onFilesRejected($event)">
+</ngx-dropzone>
 Shows previews
 <button (click)="drop.reset()">Reset</button>
 <ngx-dropzone [showPreviews]="true" (filesAdded)="onFilesAdded($event)" #drop></ngx-dropzone>
 Shows previews without preserving
 <ngx-dropzone [showPreviews]="true" [preserveFiles]="false" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
 Max File size 2kb
-<ngx-dropzone [maxFileSize]="2000" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
+<ngx-dropzone [maxFileSize]="2000" (filesAdded)="onFilesAdded($event)" (filesRejected)="onFilesRejected($event)">
+</ngx-dropzone>
 
 Custom styling
-<ngx-dropzone class="custom-dropzone" label="Drop it!" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
+<ngx-dropzone class="custom-dropzone" (filesAdded)="onFilesAdded($event)" [showPreviews]="true">
+  <ng-template #droparea>
+    <div class="ngx-dropzone-droparea" style="width: 100%; height: 100%;">Drop it!</div>
+  </ng-template>
+  <ng-template #preview>
+    This is a test
+  </ng-template>
+</ngx-dropzone>
 
 Custom styling disabled
 <ngx-dropzone class="custom-dropzone" [disabled]="true" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
 
 Custom styling with preview
-<ngx-dropzone class="custom-dropzone" [showPreviews]="true" (filesAdded)="onFilesAdded($event)"></ngx-dropzone>
+<ngx-dropzone class="custom-dropzone" [showPreviews]="true"  (filesAdded)="onFilesAdded($event)" (filesRemoved)="onFilesRemoved($event)" (filesRejected)="onFilesRejected($event)" [(files)]="files" (filesChange)="onFilesChanged($event)"></ngx-dropzone>

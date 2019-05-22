@@ -50,7 +50,6 @@ export class AppModule { }
 
 | Property |   Type  | Description | Default  |
 |--------------|-------|------------------------------------------------|---------|
-| `[label]`    | `string`  | Change the label text.   | `'Drop your files here (or click)'` |
 | `[multiple]` | `boolean` | Allow drop or selection of more than one file. | `true` |
 | `[accept]`    | `string`  | Specify the accepted file types.   | `'*'` |
 | `[maxFileSize]`    | `number`  | Set the maximum file size in bytes.   | `undefined` |
@@ -69,10 +68,6 @@ export class AppModule { }
 
 ```html
 <ngx-dropzone [multiple]="false"></ngx-dropzone>
-```
-
-```html
-<ngx-dropzone [label]="'This is a custom label text'"></ngx-dropzone>
 ```
 
 ```html
